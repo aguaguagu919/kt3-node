@@ -3,6 +3,7 @@ const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const config = require('./config');
+const errorHandler = require('./middleware/errorHandler');
 const userRoutes = require('./routes/users');
 const postRoutes = require('./routes/posts');
 
@@ -35,28 +36,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-
-  if (err.code === 'P2002') {
-    return res.status(409).json({
-      error: 'Conflict',
-      message: `Unique constraint failed on the fields: ${err.meta?.target || 'unknown'}`
-    });
-  }
-
-  if (err.code === 'P2025') {
-    return res.status(404).json({
-      error: 'Not Found',
-      message: err.meta?.cause || 'Record not found'
-    });
-  }
-
-  res.status(err.status || 500).json({
-    error: err.name || 'Internal Server Error',
-    message: err.message || 'Something went wrong'
-  });
-});
+app.use(errorHandler);
 
 const PORT = config.port || 3000;
 app.listen(PORT, () => {
